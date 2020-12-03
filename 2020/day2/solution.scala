@@ -2,14 +2,15 @@ import scala.io.Source
 
 object Solution extends App {
 
-  partOne();
+  println(partOne());
+  println(partTwo());
 
   case class Policy(min: Int, max: Int, letter: Char, password: String);
 
-  def partOne(): Unit = {
+  def parsePolicies(): Iterator[Policy] = {
     val policyRE = "([0-9]+)-([0-9]+) ([A-Za-z]): ([A-Za-z]+)".r;
 
-    val answer = Source.fromResource("2020/day2/input.txt")
+    Source.fromResource("2020/day2/input.txt")
       .getLines()
       .map(line => {
         line match {
@@ -17,11 +18,25 @@ object Solution extends App {
           case _ => throw new Exception("no match" + line)
         }
       })
-      .filter((policy) => {
+  }
+
+  def partOne(): Int = {
+    val answer = parsePolicies().filter((policy: Policy) => {
         val count = policy.password.count(_ == policy.letter);
         count >= policy.min && count <= policy.max
       })
 
-    println(answer.toList.size)
+    answer.toList.size
+  }
+
+  def partTwo(): Int = {
+    val answer = parsePolicies().filter((policy: Policy) => {
+      val atFirstPosition: Boolean = policy.password.charAt(policy.min - 1) == policy.letter;
+      val atSecondPosition: Boolean = policy.password.charAt(policy.max - 1) == policy.letter;
+
+      (atFirstPosition && !atSecondPosition) || (atSecondPosition && !atFirstPosition)
+    })
+
+    answer.toList.size
   }
 }
