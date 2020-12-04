@@ -4,7 +4,7 @@ import scala.io.Source
 object Solution extends App {
 
   println(partOne(3, 1));
-
+  println(partTwo());
 
   def parseTreeMap(): List[List[Boolean]] = {
     val TREE = '#';
@@ -24,15 +24,25 @@ object Solution extends App {
     var row = 0;
 
     var trees = 0;
-    while (row < treeMap.length - 1) {
+    while (row < treeMap.length) {
       col = (col + right) % rowLength;
-      row = math.min(row + down, treeMap.length - 1);
+      row = row + down;
 
-      if (treeMap(row)(col)) {
+      if (row < treeMap.length && treeMap(row)(col)) {
         trees += 1
       }
     }
     trees
+  }
+
+  def partTwo(): Long = {
+    val one = partOne(1, 1).toLong
+    val two = partOne(3, 1)
+    val three = partOne(5, 1)
+    val four = partOne(7, 1)
+    val five = partOne(1, 2)
+    println(one, two, three, four, five);
+    one * two * three * four * five
   }
 
 }
