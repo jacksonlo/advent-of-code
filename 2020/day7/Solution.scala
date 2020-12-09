@@ -6,10 +6,11 @@ object Solution {
 
   def main(args: Array[String]): Unit = {
     println(partOne("shiny gold"));
+    println(partTwo("shiny gold"));
  }
 
   def partOne(targetColor: String): Int = {
-    val adjacencyMap = buildAdjacencyMap()
+    val adjacencyMap: Map[String, Vector[Bag]] = buildAdjacencyMap()
     var count = 0
     adjacencyMap.foreachEntry({
       (color: String, contains: Vector[Bag]) => {
@@ -28,6 +29,23 @@ object Solution {
       return true
     }
     adjacencyMap(currentColor).exists(containedColor => hasColor(adjacencyMap, targetColor, containedColor.color))
+  }
+
+  def partTwo(targetColor: String): Int = {
+    val adjacencyMap: Map[String, Vector[Bag]] = buildAdjacencyMap()
+    adjacencyMap(targetColor)
+      .map(bag => bag.count + bag.count * countBags(adjacencyMap, bag.color))
+      .sum
+  }
+
+  private def countBags(adjacencyMap: Map[String, Vector[Bag]], currentColor: String): Int = {
+    if (adjacencyMap(currentColor).isEmpty) {
+      return 0
+    }
+
+    adjacencyMap(currentColor)
+      .map(bag => bag.count + bag.count * countBags(adjacencyMap, bag.color))
+      .sum
   }
 
   private def buildAdjacencyMap(): Map[String, Vector[Bag]] = {
