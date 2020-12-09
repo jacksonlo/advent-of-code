@@ -6,11 +6,64 @@ import scala.util.control.NonFatal
 object Solution extends App {
 
   println(partOne(Array("byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"), Array("cid")));
+  println(partTwo(Array("byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"), Array("cid")));
 
   case class Passport(fields: mutable.HashMap[String,String]) {
     def hasRequiredFields(requiredFields: Array[String]): Boolean = {
       requiredFields.forall(field => fields.contains(field))
     }
+    def isValid(requiredFields: Array[String]): Boolean = {
+      var result = true
+      if (!hasRequiredFields(requiredFields)) {
+        result &= false
+      }
+
+      val byr = fields.getOrElse("byr", "")
+      result &= validateRange(byr, 1920, 2002)
+
+      val iyr = fields.getOrElse("iyr", "")
+      result &= validateRange(iyr, 2010, 2020)
+
+      val eyr = fields.getOrElse("eyr", "")
+      result &= validateRange(eyr, 2020, 2030)
+
+      val HeightCmRE = "([0-9]+)(cm)".r
+      val HeightInRE = "([0-9]+)(in)".r
+      val hgt = fields.getOrElse("hgt", "")
+      hgt match {
+        case HeightCmRE(value, unit) => result &= validateRange(value, 150, 193)
+        case HeightInRE(value, unit) => result &= validateRange(value, 59, 76)
+        case _ => result &= false
+      }
+
+      val HclRE = "#([0-9A-Za-z]+){6}".r
+      val hcl = fields.getOrElse("hcl", "")
+      hcl match {
+        case HclRE(colorId) => result &= true
+        case _ => result &= false
+      }
+
+      val ecl = fields.getOrElse("ecl", "")
+      val validEyeColors = Set("amb", "blu", "brn", "gry", "grn", "hzl", "oth")
+      result &= validEyeColors.contains(ecl)
+
+      val pid = fields.getOrElse("pid", "")
+      val PidRE = "([0-9]+)".r;
+      pid match {
+        case PidRE(value) => result &= value.length == 9
+        case _ => result &= false
+      }
+
+      result
+    }
+  }
+
+  def validateRange(fieldValue: String, min: Int, max: Int) = {
+    var result = false
+    if (fieldValue != "") {
+      result = fieldValue.toInt >= min && fieldValue.toInt <= max
+    }
+    result
   }
 
   def parsePassports(): List[Passport] = {
@@ -62,4 +115,14 @@ object Solution extends App {
     passports.length
   }
 
+  def partTwo(requiredFields: Array[String], optionalFields: Array[String]): Int = {
+    val invalidPassports = List(
+      Passport(mutable.HashMap("eyr" -> "1972", "cid" -> "100", "hcl" -> "#18171d", "ecl" -> "amb", "hgt" -> "170", "pid" -> "186cm", "iyr" -> "2018", "byr" -> "1926")),
+      Passport(mutable.HashMap("iyr" -> "2019", "hcl" -> "#602927", "eyr" -> "1967", "hgt" -> "170cm", "ecl" -> "grn", "pid" -> "012533040", "byr" -> "1946")),
+      Passport(mutable.HashMap("hcl" -> "dab227", "iyr" -> "2012", "ecl" -> "brn", "hgt" -> "182cm", "pid" -> "021572410", "eyr" -> "2020", "byr" -> "1992", "cid" -> "277")),
+      Passport(mutable.HashMap("hgt" -> "59cm", "ecl" -> "zzz", "eyr" -> "2038", "hcl" -> "74454a", "iyr" -> "2023", "pid" -> "3556412378", "byr" -> "2007")),
+    );
+    val passports = parsePassports().filter(passport => passport.isValid(requiredFields))
+    passports.length
+  }
 }
