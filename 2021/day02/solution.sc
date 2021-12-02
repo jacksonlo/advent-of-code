@@ -9,19 +9,34 @@ object Direction {
 
 final case class Command(direction: Direction, amount: Int)
 
-final case class Position(horizontal: Int, depth: Int)
+final case class Position(horizontal: Int, depth: Int, aim: Int)
 
 object Solution {
   def main(args: Array[String]): Unit = {
     println(partOne())
+    println(partTwo())
   }
 
   def partOne(): Int = {
-    val finalPosition = getInput().foldLeft(Position(0, 0))((position, command) => {
+    val finalPosition = getInput().foldLeft(Position(0, 0, 0))((position, command) => {
       command.direction match {
         case Direction.Up => position.copy(depth = position.depth - command.amount)
         case Direction.Down => position.copy(depth = position.depth + command.amount)
         case Direction.Forward => position.copy(horizontal = position.horizontal + command.amount)
+      }
+    })
+    finalPosition.depth * finalPosition.horizontal
+  }
+
+  def partTwo(): Int = {
+    val finalPosition = getInput().foldLeft(Position(0, 0, 0))((position, command) => {
+      command.direction match {
+        case Direction.Up => position.copy(aim = position.aim - command.amount)
+        case Direction.Down => position.copy(aim = position.aim + command.amount)
+        case Direction.Forward => position.copy(
+          horizontal = position.horizontal + command.amount,
+          depth = position.depth + position.aim * command.amount
+        )
       }
     })
     finalPosition.depth * finalPosition.horizontal
