@@ -1,5 +1,4 @@
 import scala.io.Source
-import scala.util.Random
 
 final case class LanternFish(initialTimer: Int) {
   var timer: Int = initialTimer
@@ -23,6 +22,7 @@ object Solution {
 
   def main(args: Array[String]): Unit = {
     println(partOne())
+    println(partTwo())
   }
 
   def partOne(): Int = {
@@ -31,6 +31,21 @@ object Solution {
       val newFishes = fishes.map(_.dayPassed()).filter(_.isDefined).map(_.get)
       fishes ++ newFishes
     }).length
+  }
+
+  def partTwo(): Long = {
+    val days = Range.inclusive(1, 256)
+    val initialFishMap: Map[Int, Long] = lanternFishes.groupBy(_.timer).map{case (key, value) => (key, value.length)}
+    val finalFishMap = days.foldLeft(initialFishMap)((fishMap, day) => {
+      val fishValues = fishMap.map{case (timer, fishCount) => {
+        timer match {
+          case 0 => List((6, fishCount), (8, fishCount))
+          case _ => List((timer - 1, fishCount))
+        }
+      }}
+      fishValues.flatten.groupBy(_._1).map{case (key, value) => (key, value.map(_._2).sum)}
+    })
+    finalFishMap.values.sum
   }
 
   private def lanternFishes: List[LanternFish] = {
