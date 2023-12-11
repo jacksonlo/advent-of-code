@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use num_integer::lcm;
 use regex::Regex;
 
 fn main() {
@@ -16,37 +17,12 @@ fn part1(input: &str) {
 
 fn part2(input: &str) {
     let map = parse_map(input);
-    let ends_with_a = map.get_nodes_that_end_with_a();
-
-    let mut index = 0;
-    let mut steps = 0;
-    let mut current_steps = ends_with_a;
-    loop {
-        let all_end_with_z = current_steps.iter().all(|s| s.ends_with("Z"));
-        if all_end_with_z {
-            break;
-        }
-        if index == map.steps.len() {
-            index = 0;
-        }
-
-        let next_step = map.steps[index];
-        current_steps = current_steps
-            .iter()
-            .map(|step| {
-                let node = map.adjacency_map.get(step).unwrap();
-                if next_step == 'R' {
-                    node.right.to_string()
-                } else {
-                    node.left.to_string()
-                }
-            })
-            .collect::<Vec<_>>();
-
-        index += 1;
-        steps += 1;
-    }
-
+    let a_locations = map.get_nodes_that_end_with_a();
+    let z_locations = a_locations.iter().map(|a| map.find_z_location(&a));
+    let steps = z_locations
+        .map(|z| z.step_index as u64)
+        .reduce(|a, b| lcm(a, b))
+        .unwrap();
     println!("Part 2: {:?}", steps);
 }
 
@@ -82,12 +58,50 @@ impl Map {
     }
 
     fn get_nodes_that_end_with_a(&self) -> Vec<String> {
-        self.adjacency_map
+        let mut result = self
+            .adjacency_map
             .keys()
             .filter(|k| k.ends_with("A"))
             .map(|k| k.to_string())
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        result.sort();
+        return result;
     }
+
+    fn find_z_location(&self, a_start: &str) -> ZLocation {
+        let step_length = self.steps.len() as i32;
+        let mut index = 0;
+        let mut step_count = 0;
+        let mut current_step = a_start.to_string();
+        loop {
+            if current_step.ends_with("Z") {
+                return ZLocation {
+                    step_index: step_count,
+                    node: current_step.to_string(),
+                };
+            }
+
+            let node = self.adjacency_map.get(&current_step).unwrap();
+            let next_step = self.steps[index as usize];
+            current_step = if next_step == 'R' {
+                node.right.to_string()
+            } else {
+                node.left.to_string()
+            };
+
+            index += 1;
+            if index == step_length {
+                index = 0;
+            }
+            step_count += 1;
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+struct ZLocation {
+    step_index: i32,
+    node: String,
 }
 
 #[derive(Debug)]
