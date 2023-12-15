@@ -3,15 +3,67 @@ use std::collections::{HashMap, HashSet, VecDeque};
 fn main() {
     let input = include_str!("./input.txt");
     part1(&input);
-    // part2(&input);
+    part2(&input);
 }
 
 fn part1(input: &str) {
     let tile_map = parse_tile_map(input);
 
     // Default round down because its integer division
-    let steps_to_farthest_point = tile_map.tiles_in_loop() / 2;
+    let steps_to_farthest_point = tile_map.get_positions_in_loop().len() / 2;
     println!("Part 1: {}", steps_to_farthest_point);
+}
+
+fn part2(input: &str) {
+    let tile_map = parse_tile_map(input);
+    let loop_positions: HashSet<Position> = HashSet::from_iter(tile_map.get_positions_in_loop());
+
+    let mut tiles_enclosed = 0;
+    for (position, tile) in tile_map.map.iter() {
+        if loop_positions.contains(position) {
+            continue;
+        }
+        // Draw a line from the position to the left until we hit the edge
+        // Over that line, check how many times we hit a position in the loop
+        // Odd = enclosed, even = not enclosed
+        let line_positions = (0..position.x)
+            .map(|x| Position { x, y: position.y })
+            .filter(|p| loop_positions.contains(p))
+            .filter(|p| tile_map.get(&p).pipe_char != '-')
+            .collect::<Vec<Position>>();
+
+        let overlap = line_positions
+            .iter()
+            .map(|p| tile_map.get(&p))
+            .fold(vec![], |acc: Vec<&Tile>, t| {
+                // Flatten L J and F 7 to nothing because it doesnt cross
+                // Flatten L 7 and F J to 1 because it crosses once
+                let mut accc = acc;
+                let last = accc.last();
+                if last.is_some_and(|l| {
+                    (l.pipe_char == 'L' && t.pipe_char == 'J')
+                        || (l.pipe_char == 'F' && t.pipe_char == '7')
+                }) {
+                    accc.pop();
+                } else if last.is_some_and(|l| {
+                    (l.pipe_char == 'L' && t.pipe_char == '7')
+                        || (l.pipe_char == 'F' && t.pipe_char == 'J')
+                }) {
+                    accc.pop();
+                    accc.push(t);
+                } else {
+                    accc.push(t);
+                }
+                return accc;
+            })
+            .len();
+
+        if overlap % 2 == 1 {
+            tiles_enclosed += 1;
+        }
+    }
+
+    println!("Part 2: {}", tiles_enclosed);
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -26,6 +78,10 @@ struct TileMap {
 }
 
 impl TileMap {
+    fn get(&self, position: &Position) -> &Tile {
+        return self.map.get(position).unwrap();
+    }
+
     fn get_starting_position(&self) -> Position {
         for (position, tile) in self.map.iter() {
             if tile.pipe_char == 'S' {
@@ -35,20 +91,18 @@ impl TileMap {
         panic!("No starting position found");
     }
 
-    fn tiles_in_loop(&self) -> i32 {
+    fn get_positions_in_loop(&self) -> Vec<Position> {
         let starting_position = self.get_starting_position();
-        // DFS to find a path to loop to itself
         let loop_positions = self.traverse(&starting_position, &starting_position);
-        return loop_positions.len() as i32;
+        return loop_positions;
     }
 
     fn traverse(&self, start_position: &Position, ending_position: &Position) -> Vec<Position> {
-        // TODO: trace the path to the ending position, that is the result
         let mut queue = VecDeque::from(vec![(*start_position, vec![])]);
         let mut visited = HashSet::new();
         while !queue.is_empty() {
             let (current_position, path) = queue.pop_back().unwrap();
-            if current_position == *ending_position && visited.len() > 0 {
+            if current_position == *ending_position && visited.len() > 2 {
                 // println!("Found path to self");
                 // println!("Path: {:?}", path);
                 return path;
@@ -66,11 +120,11 @@ impl TileMap {
                 queue.push_back((*connection, new_path));
             }
         }
-        return vec![];
+        panic!("No path found");
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 struct Tile {
     position: Position,
     pipe_char: char,
